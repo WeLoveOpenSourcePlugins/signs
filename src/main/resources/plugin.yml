@@ -1,0 +1,7 @@
+name: '${project.name}'
+description: '${project.description}'
+version: '${project.version}'
+author: 'Lukaesebrot'
+website: '${project.url}'
+api-version: '1.13'
+main: '${project.groupId}.${project.artifactId}.${project.name}'
