@@ -1,0 +1,17 @@
+signs:
+  updateInterval: 100
+  lineModel:
+    - '[§2{server_name}§r]'
+    - ''
+    - '» §5{player_count} §rof §5{max_player_count} §rplayers'
+    - '» {status_color_code}{status}'
+  states:
+    online:
+      color: green
+      material: green_concrete
+    offline:
+      color: red
+      material: red_concrete
+    full:
+      color: yellow
+      material: yellow_concrete
