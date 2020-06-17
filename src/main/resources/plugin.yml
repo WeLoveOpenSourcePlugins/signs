@@ -5,3 +5,7 @@ author: 'Lukaesebrot'
 website: '${project.url}'
 api-version: '1.15'
 main: '${project.groupId}.${project.artifactId}.${project.name}'
+commands:
+  createSign:
+    description: Creates a new server sign
+    permission: signs.use

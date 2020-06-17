@@ -1,12 +1,9 @@
 package dev.lukaesebrot.wlosp.signs;
 
 import dev.lukaesebrot.wlosp.signs.network.ProxyCommunicationAdapter;
-import dev.lukaesebrot.wlosp.signs.signs.Sign;
-import dev.lukaesebrot.wlosp.signs.signs.SignClickListener;
-import dev.lukaesebrot.wlosp.signs.signs.SignRegistry;
+import dev.lukaesebrot.wlosp.signs.signs.*;
 import dev.lukaesebrot.wlosp.signs.storage.FlatfileStorageProvider;
 import dev.lukaesebrot.wlosp.signs.storage.StorageProvider;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -54,12 +51,12 @@ public class Signs extends JavaPlugin {
         signRegistry.registerInitialSigns();
         signRegistry.scheduleSignUpdates();
 
-        // Insert a dummy sign
-        // TODO: Remove this
-        signRegistry.registerSign(new Sign(Bukkit.getWorld("world").getBlockAt(159, 64, 2).getLocation(), "server"));
+        // Register the sign creation command
+        getCommand("createSign").setExecutor(new CreateSignCommand(signRegistry));
 
-        // Register the sign click listener
+        // Register the sign click and break listener
         getServer().getPluginManager().registerEvents(new SignClickListener(signRegistry, proxyCommunicationAdapter), this);
+        getServer().getPluginManager().registerEvents(new SignBreakListener(signRegistry), this);
 
         // Register the BungeeCord plugin channel
         getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");

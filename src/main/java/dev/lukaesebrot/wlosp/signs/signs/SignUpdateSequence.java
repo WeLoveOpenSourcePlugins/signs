@@ -18,12 +18,24 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Represents the sequence that gets scheduled to update all signs
+ * @author Lukas Schulte Pelkum
+ * @version 1.0.0
+ * @since 1.0.0
+ */
 public class SignUpdateSequence extends BukkitRunnable {
 
+    // Define local variables
     private final Signs plugin;
     private final SignRegistry signRegistry;
     private final ProxyCommunicationAdapter proxyCommunicationAdapter;
 
+    /**
+     * Creates a new sign update sequence
+     * @param signRegistry The sign registry to use
+     * @param proxyCommunicationAdapter The proxy communication adapter to use
+     */
     public SignUpdateSequence(SignRegistry signRegistry, ProxyCommunicationAdapter proxyCommunicationAdapter) {
         this.plugin = JavaPlugin.getPlugin(Signs.class);
         this.signRegistry = signRegistry;
