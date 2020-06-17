@@ -1,24 +1,12 @@
 package dev.lukaesebrot.wlosp.signs.signs;
 
-import com.google.common.collect.Iterables;
 import dev.lukaesebrot.wlosp.signs.Signs;
 import dev.lukaesebrot.wlosp.signs.network.ProxyCommunicationAdapter;
 import dev.lukaesebrot.wlosp.signs.storage.StorageProvider;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Directional;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 /**
@@ -86,7 +74,7 @@ public class SignRegistry {
     }
 
     /**
-     * Returns the corresponding sign
+     * Returns the sign matching the given filter
      * @param filter The filter to use for the sign
      * @return The optional sign
      */
@@ -95,70 +83,18 @@ public class SignRegistry {
     }
 
     /**
+     * @return The current set of signs
+     */
+    public Set<Sign> getAllSigns() {
+        return signs;
+    }
+
+    /**
      * Schedules the updating sequence of all signs
      */
     public void scheduleSignUpdates() {
         Signs plugin = JavaPlugin.getPlugin(Signs.class);
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, task -> {
-            // TODO: Remove debug message
-            System.out.println("CALL ME MAYBE");
-            signs.forEach(sign -> {
-                // Define the block and its state
-                Block block = sign.getLocation().getBlock();
-                BlockState state;
-                try {
-                    state = Bukkit.getScheduler().callSyncMethod(plugin, block::getState).get();
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-                    return;
-                }
-
-                // Check if the block is a sign
-                if (!(state instanceof org.bukkit.block.Sign)) {
-                    removeSign(sign);
-                    return;
-                }
-                org.bukkit.block.Sign signState = (org.bukkit.block.Sign) state;
-
-                // Define the mounting point of the sign
-                BlockData data = state.getBlockData();
-                BlockFace mountingFace = data instanceof Directional ? ((Directional) data).getFacing().getOppositeFace() : BlockFace.DOWN;
-                Block mountingPoint = block.getRelative(mountingFace);
-
-                // Update the surrounding
-                Player player = Iterables.getFirst(Bukkit.getOnlinePlayers(), null);
-                if (player == null) {
-                    return;
-                }
-                proxyCommunicationAdapter.retrieveServerInformation(player, sign.getServer(), information -> {
-                    // Update the lines of the sign
-                    String status = information.getStatus().toString().toLowerCase();
-                    String colorCode = "§" + ChatColor.valueOf(plugin.getConfig().getString("signs.states." + status + ".color").toUpperCase()).getChar();
-                    List<String> lineModel = plugin.getConfig().getStringList("signs.lineModel");
-                    AtomicInteger counter = new AtomicInteger(0);
-                    lineModel.forEach(line -> {
-                        // Define the current index and replace the placeholders
-                        int current = counter.getAndIncrement();
-                        lineModel.set(current, line.replace("{server_name}", information.getName())
-                                .replace("{player_count}", String.valueOf(information.getCurrentPlayers()))
-                                .replace("{max_player_count}", String.valueOf(information.getMaxPlayers()))
-                                .replace("{status_color_code}", colorCode)
-                                .replace("{status}", status)
-                        );
-
-                        // Set the line of the sign
-                        if (current < 4) {
-                            signState.setLine(current, lineModel.get(current));
-                        }
-                    });
-                    signState.update();
-
-                    // Update the mounting point of the sign
-                    Material material = Material.valueOf(plugin.getConfig().getString("signs.states." + status + ".material").toUpperCase());
-                    mountingPoint.setType(material);
-                });
-            });
-        }, 1, plugin.getConfig().getInt("signs.updateInterval"));
+        new SignUpdateSequence(this, proxyCommunicationAdapter).runTaskTimerAsynchronously(plugin, 0L, plugin.getConfig().getLong("signs.updateInterval"));
     }
 
 }

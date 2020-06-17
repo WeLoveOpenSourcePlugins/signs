@@ -24,6 +24,9 @@ import java.util.function.Consumer;
  */
 public class ProxyCommunicationAdapter implements PluginMessageListener {
 
+    // Define the local socket
+    private Socket socket;
+
     // Define the waiting queue
     private final List<Consumer<IncomingPluginMessageContext>> waiting;
 
@@ -32,6 +35,25 @@ public class ProxyCommunicationAdapter implements PluginMessageListener {
      */
     public ProxyCommunicationAdapter() {
         this.waiting = Collections.synchronizedList(new ArrayList<>());
+    }
+
+    /**
+     * Opens the local socket
+     * @throws IOException An exception the socket may throw
+     */
+    public void openSocket() throws IOException {
+        socket = new Socket();
+        socket.setSoTimeout(4000);
+    }
+
+    /**
+     * Closes the local socket
+     * @throws IOException An exception the socket may throw
+     */
+    public void closeSocket() throws IOException {
+        if (socket != null) {
+            socket.close();
+        }
     }
 
     /**
@@ -56,8 +78,6 @@ public class ProxyCommunicationAdapter implements PluginMessageListener {
      * @param callback Gets called when the information were received
      */
     public void retrieveServerInformation(Player player, String server, Consumer<ServerInformation> callback) {
-        // TODO: Remove debug message
-        System.out.println("retstart");
         // Retrieve the server's IP
         ByteArrayDataOutput out = ByteStreams.newDataOutput();
         out.writeUTF("ServerIP");
@@ -68,15 +88,15 @@ public class ProxyCommunicationAdapter implements PluginMessageListener {
         awaitResponse(context -> {
             // Read the server information
             ByteArrayDataInput in = ByteStreams.newDataInput(context.getMessage());
-            String incomingServerName = in.readUTF();
+            in.readUTF();
+            in.readUTF();
             String ip = in.readUTF();
             int port = in.readUnsignedShort();
 
             // Ping the server
             try (Socket socket = new Socket()) {
                 // Set up the socket
-                socket.setSoTimeout(4000);
-                socket.connect(new InetSocketAddress(ip, port), 4000);
+                socket.connect(new InetSocketAddress(ip, port), 20);
 
                 // Define the output and input streams
                 DataOutputStream sockOut = new DataOutputStream(socket.getOutputStream());
@@ -85,7 +105,7 @@ public class ProxyCommunicationAdapter implements PluginMessageListener {
 
                 // Build the response string
                 int current;
-                StringBuffer stringBuffer = new StringBuffer();
+                StringBuilder stringBuffer = new StringBuilder();
                 while ((current = socketIn.read()) != -1) {
                     if (current > 16 && current != 255 && current != 23 && current != 24) {
                         stringBuffer.append((char) current);
@@ -100,8 +120,6 @@ public class ProxyCommunicationAdapter implements PluginMessageListener {
             } catch (IOException exception) {
                 callback.accept(new ServerInformation(server, ServerStatus.OFFLINE, 0, 0));
             }
-            // TODO: Remove debug message
-            System.out.println("retend");
         });
     }
 
